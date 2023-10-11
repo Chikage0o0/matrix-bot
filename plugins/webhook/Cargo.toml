@@ -1,0 +1,18 @@
+[package]
+name = "webhook"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+anyhow = "1"
+matrix_bot_core = { path = "../../matrix_bot_core" }
+log = "0.4.14"
+toml = "0.8.2"
+serde = { version = "1.0.188", features = ["derive"] }
+tokio = { version = "1.33.0", default-features = false, features = [] }
+axum = "0.6.20"
+tower-http = { version = "0.4.4", features = ["auth"] }
+
+[dev-dependencies]
+env_logger = "0.10.0"
