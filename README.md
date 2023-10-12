@@ -11,7 +11,7 @@
 #### Docker
 ```bash
 docker run -d --name matrix_bot          \
-    -e HOME_SERVER_URL="https://xxx.xxx" \
+    -e HOMESERVER_URL="https://xxx.xxx" \
     -e USERNAME="x"                      \
     -e PASSWORD="x"                      \
     -v ./matrix_bot:/matrix_bot          \

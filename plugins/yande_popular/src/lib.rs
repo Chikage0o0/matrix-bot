@@ -117,6 +117,10 @@ pub async fn run(client: Client, setting_folder: impl AsRef<Path>) -> Result<()>
                     room.send_attachment(&path)
                         .await
                         .unwrap_or_else(|e| log::error!("send attachment failed: {}", e));
+
+                    std::fs::remove_file(&path).unwrap_or_else(|e| {
+                        log::error!("remove file failed: {}", e);
+                    });
                 }
             }
             log::info!("scan: {} done", setting.room_id);
