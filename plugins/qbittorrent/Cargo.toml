@@ -1,0 +1,17 @@
+[package]
+name = "qbittorrent"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+anyhow = "1"
+matrix_bot_core = { path = "../../matrix_bot_core" }
+log = "0.4.14"
+toml = "0.8.2"
+serde = { version = "1.0.188", features = ["derive"] }
+tokio = { version = "1.33.0", default-features = false, features = [] }
+qbit-rs = { version = "0.3.7" }
+
+[dev-dependencies]
+env_logger = "0.10.0"

@@ -6,6 +6,7 @@ members = [
     # plugins
     "plugins/yande_popular",
     "plugins/webhook",
+    "plugins/qbittorrent",
 ]
 resolver = "2"
 

@@ -1,78 +1,25 @@
-use std::{
-    collections::HashMap,
-    hash::Hash,
-    path::{self, Path, PathBuf},
-};
+use std::path::Path;
 
 use anyhow::Result;
-use matrix_bot_core::matrix::{client::Client, room};
-use serde::{Deserialize, Serialize};
+use matrix_bot_core::matrix::client::Client;
+
+use crate::setting::Setting;
 
 mod db;
 mod resize;
+mod setting;
 mod yande;
 
-#[derive(Debug, Deserialize, Serialize)]
-struct Settings {
-    setting: Vec<Setting>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, Hash, Eq, PartialEq)]
-struct Setting {
-    tmp_path: PathBuf,
-    db_path: PathBuf,
-    room_id: String,
-    resize: Option<usize>,
-    yande_url: Vec<String>,
-}
-
-pub async fn run(client: Client, setting_folder: impl AsRef<Path>) -> Result<()> {
+pub async fn run(client: Client, plugin_folder: impl AsRef<Path>) -> Result<()> {
     log::info!("start yande_popular");
-    let setting_path = setting_folder.as_ref().join("yande_popular.toml");
 
-    // load setting, if not exists, create it and exit
-    let settings: Settings = if !setting_path.exists() {
-        log::info!("create setting file: {}", setting_path.to_string_lossy());
-        let settings = Settings {
-            setting: vec![Setting {
-                tmp_path: setting_folder.as_ref().join("yande_popular").join("tmp"),
-                db_path: setting_folder.as_ref().join("yande_popular").join("db"),
-                room_id: "".to_string(),
-                resize: Some(1920),
-                yande_url: vec!["https://yande.re/post/popular_recent".to_string()],
-            }],
-        };
-        let toml = toml::to_string_pretty(&settings).unwrap();
-        std::fs::write(&setting_path, toml)?;
-        log::error!(
-            "please edit setting file: {}",
-            setting_path.to_string_lossy()
-        );
-        return Err(anyhow::anyhow!(
-            "please edit setting file: {}",
-            setting_path.to_string_lossy()
-        ));
-    } else {
-        log::info!("load setting file: {}", setting_path.to_string_lossy());
-        let toml = std::fs::read_to_string(&setting_path)?;
-        toml::from_str(&toml)?
-    };
-
-    // map to hashmap for easy access
-    // key: Setting Value: (DB, Room)
-    let mut settings_hash = HashMap::new();
-    for setting in settings.setting {
-        let db = db::DB::open(&setting.db_path);
-        std::fs::create_dir_all(path::Path::new(&setting.tmp_path)).unwrap_or_else(|e| {
-            log::error!("create tmp dir failed: {}", e);
-        });
-        let room = room::Room::new(&client, &setting.room_id).await?;
-        settings_hash.insert(setting.clone(), (db, room));
-    }
+    let setting_hashmap = Setting::get_or_init(plugin_folder)?
+        .to_hashmap(&client)
+        .await?;
 
     loop {
         log::info!("start scan");
-        for (setting, (db, room)) in settings_hash.iter() {
+        for (setting, (db, room)) in setting_hashmap.iter() {
             log::info!("scan: {}", setting.room_id);
             let mut image_list = Vec::new();
 
