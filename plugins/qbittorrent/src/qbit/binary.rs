@@ -27,11 +27,11 @@ fn download_binary(path: impl AsRef<Path>) -> Result<()> {
     let resp = reqwest::blocking::get(&link)?;
     let binary = resp.bytes()?;
     std::fs::create_dir_all(path.as_ref().parent().unwrap())?;
-    std::fs::write(path, binary)?;
+    std::fs::write(&path, binary)?;
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(path, Permissions::from_mode(0o755))?;
+        std::fs::set_permissions(path, PermissionsExt::from_mode(0o755))?;
     }
     Ok(())
 }
