@@ -1,10 +1,13 @@
 use anyhow::Result;
 
-use std::{path::Path, process::Child};
+use std::{
+    path::Path,
+    process::{Child, Stdio},
+};
 
 #[allow(dead_code)]
 fn get_download_link() -> Result<String> {
-    if !(cfg!(target_os = "linux")) {
+    if cfg!(target_os = "linux") != true {
         return Err(anyhow::anyhow!("only support linux"));
     }
 
@@ -21,10 +24,10 @@ fn get_download_link() -> Result<String> {
     }
     Ok(link)
 }
-
+#[allow(dead_code)]
 fn download_binary(path: impl AsRef<Path>) -> Result<()> {
     let link = get_download_link()?;
-    let resp = reqwest::blocking::get(&link)?;
+    let resp = reqwest::blocking::get(link)?;
     let binary = resp.bytes()?;
     std::fs::create_dir_all(path.as_ref().parent().unwrap())?;
     std::fs::write(&path, binary)?;
@@ -35,7 +38,7 @@ fn download_binary(path: impl AsRef<Path>) -> Result<()> {
     }
     Ok(())
 }
-
+#[allow(dead_code)]
 pub fn run(runtime_folder: impl AsRef<Path>, port: u16) -> Result<Child> {
     let binary_path = runtime_folder.as_ref().join("qbittorrent-nox");
     if !binary_path.exists() {
@@ -73,8 +76,42 @@ pub fn run(runtime_folder: impl AsRef<Path>, port: u16) -> Result<Child> {
         "--profile={}",
         qbittorrent_folder.to_string_lossy()
     ));
+    cmd.stdout(Stdio::null());
 
     let child = cmd.spawn()?;
 
     Ok(child)
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::path::PathBuf;
+
+    use super::*;
+
+    #[test]
+    fn test_running() {
+        let runtime_folder = PathBuf::from("/tmp/qbit");
+        let mut child = run(&runtime_folder, 8080).unwrap();
+        std::thread::sleep(std::time::Duration::from_secs(10));
+
+        // is still running
+        assert!(child.try_wait().unwrap().is_none());
+        let logs = runtime_folder
+            .join("config")
+            .join("qBittorrent")
+            .join("data")
+            .join("logs")
+            .join("qbittorrent.log");
+
+        if let Ok(logs) = std::fs::read_to_string(logs) {
+            assert!(logs.contains("Web UI: Now listening on IP"));
+        } else {
+            panic!("no logs");
+        }
+
+        child.kill().unwrap();
+        std::fs::remove_dir_all("/tmp/qbit").unwrap();
+    }
 }

@@ -38,7 +38,7 @@ pub async fn sync(setting_hashmap: &HashMap<RoomSetting, (DB, Room)>) -> Result<
             image_list.extend(list);
         }
 
-        let download_list = yande::get_download_list(&image_list, &db).await?;
+        let download_list = yande::get_download_list(&image_list, db).await?;
 
         for (id, img_data) in download_list {
             for (id, url) in img_data.url.iter() {
@@ -47,7 +47,7 @@ pub async fn sync(setting_hashmap: &HashMap<RoomSetting, (DB, Room)>) -> Result<
                     Ok(path) => path,
                     Err(e) => {
                         log::error!("download failed: {}", e);
-                        return Err(e.into());
+                        return Err(e);
                     }
                 };
 
@@ -56,7 +56,7 @@ pub async fn sync(setting_hashmap: &HashMap<RoomSetting, (DB, Room)>) -> Result<
                         Ok(path) => path,
                         Err(e) => {
                             log::error!("resize {id} failed: {}", e);
-                            return Err(e.into());
+                            return Err(e);
                         }
                     }
                 } else {
@@ -72,7 +72,7 @@ pub async fn sync(setting_hashmap: &HashMap<RoomSetting, (DB, Room)>) -> Result<
                     }
                     Err(e) => {
                         log::error!("upload failed: {}", e);
-                        return Err(e.into());
+                        return Err(e);
                     }
                 }
 

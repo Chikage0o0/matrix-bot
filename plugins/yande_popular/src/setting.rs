@@ -23,14 +23,14 @@ pub struct Setting {
 }
 
 impl Setting {
-    pub async fn to_hashmap(self, client: &Client) -> Result<HashMap<RoomSetting, (DB, Room)>> {
+    pub async fn to_hashmap(&self, client: &Client) -> Result<HashMap<RoomSetting, (DB, Room)>> {
         let mut hashmap = HashMap::new();
-        for setting in self.room {
+        for setting in &self.room {
             let db = DB::open(&setting.db_path);
             std::fs::create_dir_all(Path::new(&setting.tmp_path)).unwrap_or_else(|e| {
                 log::error!("create tmp dir failed: {}", e);
             });
-            let room = Room::new(&client, &setting.room_id).await?;
+            let room = Room::new(client, &setting.room_id).await?;
             hashmap.insert(setting.clone(), (db, room));
         }
         Ok(hashmap)

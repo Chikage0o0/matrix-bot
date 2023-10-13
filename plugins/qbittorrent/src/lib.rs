@@ -10,7 +10,7 @@ pub async fn run(client: Client, plugin_folder: impl AsRef<std::path::Path>) -> 
 
     let setting = setting::get_or_init(plugin_folder)?;
 
-    if setting.use_internal_qbit {}
+    
 
     Ok(())
 }

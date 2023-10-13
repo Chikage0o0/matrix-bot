@@ -12,11 +12,11 @@ pub struct Setting {
 }
 
 impl Setting {
-    pub async fn to_hashmap(self, client: &Client) -> Result<HashMap<String, Room>> {
+    pub async fn to_hashmap(&self, client: &Client) -> Result<HashMap<String, Room>> {
         let mut hashmap = HashMap::new();
-        for room_id in self.room_id {
-            let room = Room::new(&client, &room_id).await?;
-            hashmap.insert(room_id, room);
+        for room_id in &self.room_id {
+            let room = Room::new(client, room_id).await?;
+            hashmap.insert(room_id.clone(), room);
         }
         Ok(hashmap)
     }
