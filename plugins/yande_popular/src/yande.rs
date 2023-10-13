@@ -186,9 +186,6 @@ pub async fn get_download_list(image_list: &[i64], db: &DB) -> Result<ImgInfo> {
         }
 
         download_list.insert(id, img_data.clone());
-        for (id, _) in img_data.url.iter() {
-            db.insert(&id.to_string())?;
-        }
     }
 
     Ok(download_list)

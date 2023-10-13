@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1"
 matrix_bot_core = { path = "../../matrix_bot_core" }
 image_compressor = { git = "https://github.com/Chikage0o0/image_compressor/", branch = "main" }
-reqwest = "0.11.22"
+reqwest = { version = "0.11.6" }
 log = "0.4.14"
 select = "0.6.0"
 sled = { version = "0.34.7" }
