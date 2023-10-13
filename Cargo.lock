@@ -2400,6 +2400,7 @@ dependencies = [
  "log",
  "matrix_bot_core",
  "qbit-rs",
+ "reqwest",
  "serde",
  "tokio",
  "toml 0.8.2",
