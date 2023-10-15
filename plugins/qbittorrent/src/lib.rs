@@ -28,7 +28,7 @@ pub async fn run(client: Client, plugin_folder: impl AsRef<std::path::Path>) -> 
     let _child: std::process::Child;
     #[cfg(target_os = "linux")]
     if setting.use_internal_qbit {
-        let runtime_folder = PathBuf::from("data/plugins/qbittorrent/runtime");
+        let runtime_folder = std::path::PathBuf::from("data/plugins/qbittorrent/runtime");
         let port = setting.qbit_url.split(":").last();
         let port = port.unwrap_or("80").parse().unwrap_or(80);
         _child = qbit::binary::run(&runtime_folder, port)?;
