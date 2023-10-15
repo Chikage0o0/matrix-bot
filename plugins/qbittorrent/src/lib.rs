@@ -20,7 +20,7 @@ static API: OnceLock<Qbit> = OnceLock::new();
 
 #[allow(unused_variables)]
 pub async fn run(client: Client, plugin_folder: impl AsRef<std::path::Path>) -> Result<()> {
-    log::info!("start yande_popular");
+    log::info!("start qbittorrent plugin");
 
     let setting = Setting::get_or_init(plugin_folder)?;
 

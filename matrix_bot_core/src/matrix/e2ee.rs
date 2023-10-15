@@ -94,7 +94,7 @@ async fn wait_for_confirmation(client: matrix_sdk::Client, sas: SasVerification)
             log::warn!("msg: {}", msg);
             if msg == code {
                 println!("Code matches");
-                sas.confirm().await.unwrap();
+                let _ = sas.confirm().await;
 
                 if sas.is_done() {
                     print_result(&sas);
@@ -120,20 +120,17 @@ fn print_result(sas: &SasVerification) {
 
 async fn print_devices(user_id: &UserId, client: &matrix_sdk::Client) {
     println!("Devices of user {}", user_id);
+    let clients = client.encryption().get_user_devices(user_id).await;
 
-    for device in client
-        .encryption()
-        .get_user_devices(user_id)
-        .await
-        .unwrap()
-        .devices()
-    {
-        println!(
-            "   {:<10} {:<30} {:<}",
-            device.device_id(),
-            device.display_name().unwrap_or("-"),
-            device.is_verified()
-        );
+    if let Ok(clients) = clients {
+        for device in clients.devices() {
+            println!(
+                "   {:<10} {:<30} {:<}",
+                device.device_id(),
+                device.display_name().unwrap_or("-"),
+                device.is_verified()
+            );
+        }
     }
 }
 
@@ -142,16 +139,30 @@ pub fn sync(client: &Client) -> matrix_sdk::Result<(Vec<EventHandlerHandle>, Joi
     let mut handlers = Vec::new();
     handlers.push(client.add_event_handler(
         |ev: ToDeviceKeyVerificationRequestEvent, client: matrix_sdk::Client| async move {
-            let request = client
+            let request = match client
                 .encryption()
                 .get_verification_request(&ev.sender, &ev.content.transaction_id)
                 .await
-                .expect("Request object wasn't created");
+            {
+                Some(request) => request,
+                None => {
+                    log::error!("Can't find request object for {}", &ev.sender);
+                    return;
+                }
+            };
 
-            request
-                .accept()
-                .await
-                .expect("Can't accept verification request");
+            match request.accept().await {
+                Ok(_) => {
+                    log::info!("Accepted verification request from {}", &ev.sender);
+                }
+                Err(e) => {
+                    log::error!(
+                        "Can't accept verification request from {}: {}",
+                        &ev.sender,
+                        e
+                    );
+                }
+            }
         },
     ));
 
@@ -168,7 +179,18 @@ pub fn sync(client: &Client) -> matrix_sdk::Result<(Vec<EventHandlerHandle>, Joi
                     &sas.other_device().device_id()
                 );
                 print_devices(&ev.sender, &client).await;
-                sas.accept().await.unwrap();
+                match sas.accept().await {
+                    Ok(_) => {
+                        log::info!("Accepted verification request from {}", &ev.sender);
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Can't accept verification request from {}: {}",
+                            &ev.sender,
+                            e
+                        );
+                    }
+                }
             }
         },
     ));
@@ -203,16 +225,30 @@ pub fn sync(client: &Client) -> matrix_sdk::Result<(Vec<EventHandlerHandle>, Joi
     handlers.push(client.add_event_handler(
         |ev: OriginalSyncRoomMessageEvent, client: matrix_sdk::Client| async move {
             if let MessageType::VerificationRequest(_) = &ev.content.msgtype {
-                let request = client
+                let request = match client
                     .encryption()
                     .get_verification_request(&ev.sender, &ev.event_id)
                     .await
-                    .expect("Request object wasn't created");
+                {
+                    Some(request) => request,
+                    None => {
+                        log::error!("Can't find request object for {}", &ev.sender);
+                        return;
+                    }
+                };
 
-                request
-                    .accept()
-                    .await
-                    .expect("Can't accept verification request");
+                match request.accept().await {
+                    Ok(_) => {
+                        log::info!("Accepted verification request from {}", &ev.sender);
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Can't accept verification request from {}: {}",
+                            &ev.sender,
+                            e
+                        );
+                    }
+                }
             }
         },
     ));
@@ -230,7 +266,18 @@ pub fn sync(client: &Client) -> matrix_sdk::Result<(Vec<EventHandlerHandle>, Joi
                     &sas.other_device().device_id()
                 );
                 print_devices(&ev.sender, &client).await;
-                sas.accept().await.unwrap();
+                match sas.accept().await {
+                    Ok(_) => {
+                        log::info!("Accepted verification request from {}", &ev.sender);
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Can't accept verification request from {}: {}",
+                            &ev.sender,
+                            e
+                        );
+                    }
+                }
             }
         },
     ));

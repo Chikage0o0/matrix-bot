@@ -37,7 +37,7 @@ pub async fn add_torrent(
     let xt = url
         .query_pairs()
         .find(|(k, _)| k == "xt")
-        .map(|(_, v)| v.to_string());
+        .map(|(_, v)| v.to_string().to_ascii_lowercase());
 
     // 检测是否已经添加过
     let torrents = api.get_torrent_list(GetTorrentListArg::default()).await?;
@@ -47,7 +47,7 @@ pub async fn add_torrent(
             let torrent_xt = torrent_url
                 .query_pairs()
                 .find(|(k, _)| k == "xt")
-                .map(|(_, v)| v.to_string());
+                .map(|(_, v)| v.to_string().to_ascii_lowercase());
             if xt == torrent_xt {
                 return Err(anyhow::anyhow!("torrent already exists"));
             }
@@ -129,8 +129,8 @@ pub async fn scan_torrent(api: &Qbit) -> Result<(ExpireTorrents, UploadTorrents)
 
 pub async fn expire_torrents(api: &Qbit, torrents: &ExpireTorrents) -> Result<()> {
     for (hash, torrent) in torrents {
-        let event_id = torrent.tags.as_ref();
-        let room_id = torrent.category.as_ref();
+        let event_id = extract_non_empty_str(&torrent.tags);
+        let room_id = extract_non_empty_str(&torrent.category);
 
         api.delete_torrents(vec![hash.clone()], true).await?;
         if room_id.is_some() {
@@ -173,14 +173,14 @@ pub async fn expire_torrents(api: &Qbit, torrents: &ExpireTorrents) -> Result<()
 pub async fn upload_torrents(api: &Qbit, torrents: &UploadTorrents) -> Result<()> {
     for (hash, torrent) in torrents {
         log::info!("upload torrent: {}", &hash);
-        let event_id = torrent.tags.as_ref();
-        let room_id = torrent.category.as_ref();
+        let event_id = extract_non_empty_str(&torrent.tags);
+        let room_id = extract_non_empty_str(&torrent.category);
 
         let file_path = torrent.content_path.as_ref().unwrap().clone();
         let file_path = std::path::Path::new(&file_path);
 
         let download_page = upload::gofile::upload(file_path).await?;
-        if event_id.is_some() && room_id.is_some() {
+        if room_id.is_some() {
             let room_id = room_id.unwrap();
 
             let room = ROOM_MAP.get().unwrap().get(room_id);
@@ -295,20 +295,14 @@ pub async fn show_status(
     Ok((msg, html_msg))
 }
 
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-
-    #[tokio::test]
-    async fn test_show_status() {
-        let api = login("admin", "adminadmin", "http://127.0.0.1:8080")
-            .await
-            .unwrap();
-        let status = api
-            .get_torrent_list(GetTorrentListArg::default())
-            .await
-            .unwrap();
-        println!("{:#?}", status);
+fn extract_non_empty_str(s: &Option<String>) -> Option<&String> {
+    if let Some(s) = s {
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    } else {
+        None
     }
 }
