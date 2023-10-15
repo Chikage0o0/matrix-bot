@@ -21,7 +21,6 @@ pub struct Setting {
 pub struct RoomSetting {
     pub download_path: PathBuf,
     pub room_id: String,
-    pub db_path: PathBuf,
 }
 
 impl Setting {
@@ -34,7 +33,6 @@ impl Setting {
                 room: vec![RoomSetting {
                     download_path: path.as_ref().join("qbittorrent").join("download"),
                     room_id: "".to_string(),
-                    db_path: path.as_ref().join("qbittorrent").join("db"),
                 }],
                 qbit_user: "admin".to_string(),
                 qbit_pass: "adminadmin".to_string(),
