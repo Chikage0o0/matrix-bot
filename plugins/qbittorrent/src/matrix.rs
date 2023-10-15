@@ -88,6 +88,37 @@ pub fn add_listener(room: &matrix::room::Room) {
                 if msg_body.is_empty() {
                     return;
                 }
+                if msg_body.starts_with("!qbithelp") {
+                    let room_id = room.room_id().as_str();
+
+                    let map = ROOM_MAP.get().and_then(|map| map.get(room_id));
+
+                    if let Some((room, _setting)) = map {
+                        let msg = "!download <magnet_url> - 添加磁力至下载\n!status - 查看下载状态";
+                        room.send_relates_msg(&msg, event.event_id.as_str(), false)
+                            .await
+                            .unwrap_or_else(|e| {
+                                log::error!("send message failed: {}", e);
+                            });
+                    }
+                }
+            }
+        },
+    );
+
+    room.0.add_event_handler(
+        |event: OriginalSyncRoomMessageEvent, room: matrix_sdk::room::Room| async move {
+            if let matrix_sdk::room::Room::Joined(room) = room {
+                let msg_body = match event.content.msgtype {
+                    MessageType::Text(TextMessageEventContent { body, .. }) => body,
+                    _ => return,
+                };
+
+                let msg_body = msg_body.trim();
+
+                if msg_body.is_empty() {
+                    return;
+                }
                 if msg_body.starts_with("!status") {
                     let room_id = room.room_id().as_str();
 
