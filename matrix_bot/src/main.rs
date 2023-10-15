@@ -25,6 +25,13 @@ struct Args {
     /// Data folder
     #[arg(short, long, env = "DATA_PATH", default_value = "data")]
     data: PathBuf,
+
+    /// Plugin selection
+    /// Available plugins: yande_popular, webhook, qbittorrent
+    /// Example: -P yande_popular,webhook
+    /// Example: -P all
+    #[arg(short = 'P', long, env = "PLUGINS", default_value = "all")]
+    plugins: String,
 }
 
 #[tokio::main]
@@ -51,7 +58,7 @@ async fn main() {
 
     event_handlers.extend(e2ee_sync.0);
 
-    let _ = load_plugins(&matrix_client, args.data.join("plugins"));
+    let _ = load_plugins(&matrix_client, args.data.join("plugins"), &args.plugins);
 
     let ctrlc = tokio::signal::ctrl_c();
 
@@ -75,49 +82,68 @@ async fn main() {
     log::info!("Stopped");
 }
 
-pub fn load_plugins(client: &Client, settings_folder: impl AsRef<Path>) -> Result<()> {
+pub fn load_plugins(
+    client: &Client,
+    settings_folder: impl AsRef<Path>,
+    selection: &str,
+) -> Result<()> {
     std::fs::create_dir_all(&settings_folder)?;
+
+    let selection = selection
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect::<Vec<_>>();
+
     #[cfg(feature = "yande_popular")]
     {
-        let client = client.clone();
-        let settings_folder = settings_folder.as_ref().to_path_buf();
-        std::thread::spawn(move || {
-            let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
+        if selection.contains(&"yande_popular".to_string())
+            || selection.contains(&"all".to_string())
+        {
+            let client = client.clone();
+            let settings_folder = settings_folder.as_ref().to_path_buf();
+            std::thread::spawn(move || {
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
 
-            rt.block_on(async move { yande_popular::run(client, settings_folder).await })
-                .unwrap_or_else(|e| {
-                    log::error!("yande_popular stop: {}", e);
-                });
-        });
+                rt.block_on(async move { yande_popular::run(client, settings_folder).await })
+                    .unwrap_or_else(|e| {
+                        log::error!("yande_popular stop: {}", e);
+                    });
+            });
+        }
     };
 
     #[cfg(feature = "webhook")]
     {
-        let client = client.clone();
-        let settings_folder = settings_folder.as_ref().to_path_buf();
-        tokio::spawn(async move {
-            webhook::run(client, settings_folder)
-                .await
-                .unwrap_or_else(|e| {
-                    log::error!("webhook stop: {}", e);
-                });
-        });
+        if selection.contains(&"webhook".to_string()) || selection.contains(&"all".to_string()) {
+            let client = client.clone();
+            let settings_folder = settings_folder.as_ref().to_path_buf();
+            tokio::spawn(async move {
+                webhook::run(client, settings_folder)
+                    .await
+                    .unwrap_or_else(|e| {
+                        log::error!("webhook stop: {}", e);
+                    });
+            });
+        }
     };
 
     #[cfg(feature = "qbittorrent")]
     {
-        let client = client.clone();
-        let settings_folder = settings_folder.as_ref().to_path_buf();
-        tokio::spawn(async move {
-            qbittorrent::run(client, settings_folder)
-                .await
-                .unwrap_or_else(|e| {
-                    log::error!("qbittorrent stop: {}", e);
-                });
-        });
+        if selection.contains(&"qbittorrent".to_string()) || selection.contains(&"all".to_string())
+        {
+            let client = client.clone();
+            let settings_folder = settings_folder.as_ref().to_path_buf();
+            tokio::spawn(async move {
+                qbittorrent::run(client, settings_folder)
+                    .await
+                    .unwrap_or_else(|e| {
+                        log::error!("qbittorrent stop: {}", e);
+                    });
+            });
+        }
     };
     Ok(())
 }
