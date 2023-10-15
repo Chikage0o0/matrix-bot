@@ -5,7 +5,6 @@ use std::{
     process::{Child, Stdio},
 };
 
-#[allow(dead_code)]
 fn get_download_link() -> Result<String> {
     if cfg!(target_os = "linux") != true {
         return Err(anyhow::anyhow!("only support linux"));
@@ -24,7 +23,7 @@ fn get_download_link() -> Result<String> {
     }
     Ok(link)
 }
-#[allow(dead_code)]
+
 fn download_binary(path: impl AsRef<Path>) -> Result<()> {
     let link = get_download_link()?;
     let resp = reqwest::blocking::get(link)?;
@@ -38,7 +37,7 @@ fn download_binary(path: impl AsRef<Path>) -> Result<()> {
     }
     Ok(())
 }
-#[allow(dead_code)]
+
 pub fn run(runtime_folder: impl AsRef<Path>, port: u16) -> Result<Child> {
     let binary_path = runtime_folder.as_ref().join("qbittorrent-nox");
     if !binary_path.exists() {

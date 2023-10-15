@@ -27,18 +27,16 @@ impl Room {
 
         if let Some(room) = room {
             Ok(Room(room))
+        } else if let Some(room) = client.get_invited_room(room_id.try_into()?) {
+            room.accept_invitation()
+                .await
+                .map_err(|e| anyhow!("Can't accept invitation:{e}"))?;
+            let room = client
+                .get_joined_room(room_id.try_into()?)
+                .ok_or(anyhow!("Can't find room {}", room_id))?;
+            Ok(Room(room))
         } else {
-            if let Some(room) = client.get_invited_room(room_id.try_into()?) {
-                room.accept_invitation()
-                    .await
-                    .map_err(|e| anyhow!("Can't accept invitation:{e}"))?;
-                let room = client
-                    .get_joined_room(room_id.try_into()?)
-                    .ok_or(anyhow!("Can't find room {}", room_id))?;
-                Ok(Room(room))
-            } else {
-                Err(anyhow!("Can't find room {}", room_id))
-            }
+            Err(anyhow!("Can't find room {}", room_id))
         }
     }
 
@@ -95,10 +93,32 @@ impl Room {
         Ok(())
     }
 
+    pub async fn send_html(&self, msg: &str, html_msg: &str) -> Result<()> {
+        let msg = RoomMessageEventContent::text_html(msg, html_msg);
+
+        self.0.send(msg, None).await?;
+
+        Ok(())
+    }
+
+    pub async fn send_relates_html(&self, msg: &str, html_msg: &str, event_id: &str) -> Result<()> {
+        let msg = RoomMessageEventContent::text_html(msg, html_msg);
+
+        let event_id = OwnedEventId::try_from(event_id)?;
+        let timeline_event = self.0.event(&event_id).await?;
+        let event_content = timeline_event.event.deserialize_as::<RoomMessageEvent>()?;
+        let original_message = event_content.as_original().unwrap();
+        let msg = msg.make_reply_to(original_message);
+
+        self.0.send(msg, None).await?;
+
+        Ok(())
+    }
+
     pub async fn send_relates_msg(
         &self,
         msg: &str,
-        event_id: &OwnedEventId,
+        event_id: &str,
         is_markdown: bool,
     ) -> Result<()> {
         let msg = if is_markdown {
@@ -106,7 +126,9 @@ impl Room {
         } else {
             RoomMessageEventContent::text_plain(msg)
         };
-        let timeline_event = self.0.event(event_id).await?;
+
+        let event_id = OwnedEventId::try_from(event_id)?;
+        let timeline_event = self.0.event(&event_id).await?;
         let event_content = timeline_event.event.deserialize_as::<RoomMessageEvent>()?;
         let original_message = event_content.as_original().unwrap();
         let msg = msg.make_reply_to(original_message);

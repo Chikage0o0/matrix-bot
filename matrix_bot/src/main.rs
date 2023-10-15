@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Parser;
 use matrix_bot_core::{
     matrix::{self, client::Client},
-    sdk::SyncSettings,
+    matrix_sdk::config::SyncSettings,
 };
 
 #[derive(Parser, Debug)]
@@ -103,6 +103,19 @@ pub fn load_plugins(client: &Client, settings_folder: impl AsRef<Path>) -> Resul
                 .await
                 .unwrap_or_else(|e| {
                     log::error!("webhook stop: {}", e);
+                });
+        });
+    };
+
+    #[cfg(feature = "qbittorrent")]
+    {
+        let client = client.clone();
+        let settings_folder = settings_folder.as_ref().to_path_buf();
+        tokio::spawn(async move {
+            qbittorrent::run(client, settings_folder)
+                .await
+                .unwrap_or_else(|e| {
+                    log::error!("qbittorrent stop: {}", e);
                 });
         });
     };

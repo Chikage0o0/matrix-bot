@@ -10,9 +10,14 @@ matrix_bot_core = { path = "../../matrix_bot_core" }
 log = "0.4.14"
 toml = "0.8.2"
 serde = { version = "1.0.188", features = ["derive"] }
-tokio = { version = "1.33.0", default-features = false, features = [] }
+tokio = { version = "1.33.0", default-features = false, features = ["macros"] }
 qbit-rs = { version = "0.3.7" }
-reqwest = { version = "0.11.6", features = ["blocking"] }
+reqwest = { version = "0.11.6", features = ["blocking", "multipart", "json"] }
+regex = "1.10.0"
+once_cell = "1.8.0"
+url = "2.4.1"
+serde_json = "1.0.68"
+walkdir = "2.4.0"
 
 [dev-dependencies]
 env_logger = "0.10.0"

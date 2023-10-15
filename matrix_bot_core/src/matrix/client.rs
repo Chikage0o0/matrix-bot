@@ -30,7 +30,7 @@ impl Client {
         let homeserver_url = Url::parse(homeserver_url).expect("Couldn't parse the homeserver URL");
 
         std::fs::create_dir_all(&db_path)?;
-        std::fs::create_dir_all(&session_file.as_ref().parent().unwrap())?;
+        std::fs::create_dir_all(session_file.as_ref().parent().unwrap())?;
 
         let mut client = matrix_sdk::Client::builder()
             .homeserver_url(&homeserver_url)

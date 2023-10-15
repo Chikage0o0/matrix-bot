@@ -20,7 +20,8 @@ clap = { version = "4.4.6", features = ["derive", "env"] }
 # Optional dependencies
 yande_popular = { path = "../plugins/yande_popular", optional = true }
 webhook = { path = "../plugins/webhook", optional = true }
+qbittorrent = { path = "../plugins/qbittorrent", optional = true }
 
 [features]
 default = ["full"]
-full = ["yande_popular", "webhook"]
+full = ["yande_popular", "webhook", "qbittorrent"]
