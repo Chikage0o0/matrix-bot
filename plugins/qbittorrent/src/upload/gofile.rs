@@ -1,6 +1,9 @@
 use anyhow::Result;
+use reqwest::Body;
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, path::Path};
+use std::path::Path;
+use tokio::fs::File;
+use tokio_util::io::ReaderStream;
 use walkdir::WalkDir;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -38,12 +41,13 @@ pub async fn upload<P: AsRef<Path>>(file_path: P) -> Result<String> {
             })
         {
             let file_name = entry.file_name().to_string_lossy().to_string();
-            let file = std::fs::read(entry.path())?;
+            let file = File::open(entry.path()).await?;
+            let file_stream = ReaderStream::new(file);
             let upload = UploadParams {
                 server: server.clone(),
                 token: token.clone(),
                 folder_id: folder_id.clone(),
-                file,
+                file_stream,
                 file_name,
             };
             let upload = upload_file(upload).await?;
@@ -69,12 +73,13 @@ pub async fn upload<P: AsRef<Path>>(file_path: P) -> Result<String> {
             .unwrap()
             .to_string_lossy()
             .to_string();
-        let file = std::fs::read(file_path)?;
+        let file = File::open(file_path).await?;
+        let file_stream = ReaderStream::new(file);
         let upload = UploadParams {
             server,
             token: None,
             folder_id: None,
-            file,
+            file_stream,
             file_name,
         };
         let upload = upload_file(upload).await?;
@@ -87,7 +92,7 @@ struct UploadParams {
     server: String,
     token: Option<String>,
     folder_id: Option<String>,
-    file: Vec<u8>,
+    file_stream: ReaderStream<File>,
     file_name: String,
 }
 
@@ -113,8 +118,8 @@ async fn upload_file(parameter: UploadParams) -> Result<UploadInfo> {
     let url = format!("https://{}.gofile.io/uploadFile", parameter.server);
 
     // 一定要有file_name方法，且参数不能为空，否则数据上传失败
-    let part =
-        reqwest::multipart::Part::bytes(Cow::from(parameter.file)).file_name(parameter.file_name);
+    let part = reqwest::multipart::Part::stream(Body::wrap_stream(parameter.file_stream))
+        .file_name(parameter.file_name);
     let mut form = reqwest::multipart::Form::new().part("file", part);
     if let Some(token) = parameter.token {
         form = form.text("token", token);
