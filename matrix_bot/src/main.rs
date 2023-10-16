@@ -61,6 +61,7 @@ async fn main() {
     let _ = load_plugins(&matrix_client, args.data.join("plugins"), &args.plugins);
 
     let ctrlc = tokio::signal::ctrl_c();
+    let mut term= tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).unwrap();
 
     let client = matrix_client.clone();
 
@@ -70,6 +71,21 @@ async fn main() {
             .await
     });
 
+    #[cfg(unix)]
+    tokio::select! {
+        _=ctrlc => {
+            log::info!("Ctrl-c received, stopping");
+        }
+        _=handle => {
+            log::error!("Syncing stopped");
+        }
+    
+        _=term.recv() => {
+            log::info!("SIGTERM received, stopping");
+        }
+    }
+
+    #[cfg(not(unix))]
     tokio::select! {
         _=ctrlc => {
             log::info!("Ctrl-c received, stopping");
