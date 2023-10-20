@@ -40,6 +40,7 @@ async fn main() {
         .filter(None, log::LevelFilter::Info)
         .filter(Some("matrix_sdk"), log::LevelFilter::Warn)
         .filter(Some("tracing"), log::LevelFilter::Warn)
+        .filter(Some("ruma_common"), log::LevelFilter::Warn)
         .init();
 
     let args = Args::parse();
