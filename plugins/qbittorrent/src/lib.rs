@@ -48,7 +48,13 @@ pub async fn run(client: Client, plugin_folder: impl AsRef<std::path::Path>) -> 
     }
 
     loop {
-        let (expire, upload) = qbit::ops::scan_torrent(API.get().unwrap()).await?;
+        let (expire, upload) = qbit::ops::scan_torrent(API.get().unwrap()).await.unwrap_or_else(
+            |e| {
+                log::error!("scan torrent failed: {}", e);
+                (HashMap::new(), HashMap::new())
+            }
+        );
+
 
         expire_torrents(API.get().unwrap(), &expire)
             .await
