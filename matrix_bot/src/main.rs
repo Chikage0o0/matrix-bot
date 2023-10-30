@@ -40,6 +40,7 @@ async fn main() {
         .filter(None, log::LevelFilter::Info)
         .filter(Some("matrix_sdk"), log::LevelFilter::Warn)
         .filter(Some("tracing"), log::LevelFilter::Warn)
+        .filter(Some("ruma_common"), log::LevelFilter::Warn)
         .init();
 
     let args = Args::parse();
@@ -61,7 +62,10 @@ async fn main() {
     let _ = load_plugins(&matrix_client, args.data.join("plugins"), &args.plugins);
 
     let ctrlc = tokio::signal::ctrl_c();
-    let mut term= tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).unwrap();
+
+    #[cfg(unix)]
+    let mut term =
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).unwrap();
 
     let client = matrix_client.clone();
 
@@ -79,7 +83,7 @@ async fn main() {
         _=handle => {
             log::error!("Syncing stopped");
         }
-    
+
         _=term.recv() => {
             log::info!("SIGTERM received, stopping");
         }
