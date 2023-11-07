@@ -34,7 +34,7 @@ impl DB {
             let key = key?;
             let value = self.0.get(&key)?.unwrap();
             let value = u64::from_be_bytes(value.as_ref().try_into().unwrap());
-            if timestamp - value > 60 * 60 * 24 * 30 {
+            if timestamp - value > 60 * 60 * 24 * 365 {
                 keys.push(key);
             }
         }
